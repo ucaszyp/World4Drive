@@ -8,13 +8,13 @@ from tkinter.messagebox import NO
 import torch
 from mmcv.runner import force_fp32, auto_fp16
 from mmdet.models import DETECTORS
-from mmdet3d.core import bbox3d2result
-from mmdet3d.models.detectors.mvx_two_stage import MVXTwoStageDetector
+from mmdetection3d.mmdet3d.core import bbox3d2result
+from mmdetection3d.mmdet3d.models.detectors.mvx_two_stage import MVXTwoStageDetector
 from projects.mmdet3d_plugin.models.utils.grid_mask import GridMask
 import time
 import copy
 import numpy as np
-import mmdet3d
+import mmdetection3d.mmdet3d as mmdet3d
 from projects.mmdet3d_plugin.models.utils.bricks import run_time
 
 

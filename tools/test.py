@@ -19,10 +19,10 @@ from mmcv.parallel import MMDataParallel, MMDistributedDataParallel
 from mmcv.runner import (get_dist_info, init_dist, load_checkpoint,
                          wrap_fp16_model)
 
-from mmdet3d.apis import single_gpu_test
-from mmdet3d.datasets import build_dataset
+from mmdetection3d.mmdet3d.apis import single_gpu_test
+from mmdetection3d.mmdet3d.datasets import build_dataset
 from projects.mmdet3d_plugin.datasets.builder import build_dataloader
-from mmdet3d.models import build_model
+from mmdetection3d.mmdet3d.models import build_model
 from mmdet.apis import set_random_seed
 # from projects.mmdet3d_plugin.bevformer.apis.test import custom_multi_gpu_test
 from projects.mmdet3d_plugin.VAD.apis.test import custom_multi_gpu_test

@@ -1,5 +1,6 @@
 import torch
-from torch.cuda.amp import custom_bwd, custom_fwd
+# from torch.cuda.amp import custom_bwd, custom_fwd
+from torch.amp import custom_bwd, custom_fwd
 from torch.autograd.function import Function, once_differentiable
 from mmcv.utils import ext_loader
 ext_module = ext_loader.load_ext(
@@ -9,7 +10,7 @@ ext_module = ext_loader.load_ext(
 class MultiScaleDeformableAttnFunction_fp16(Function):
 
     @staticmethod
-    @custom_fwd(cast_inputs=torch.float16)
+    @custom_fwd(cast_inputs=torch.float16, device_type='cuda')
     def forward(ctx, value, value_spatial_shapes, value_level_start_index,
                 sampling_locations, attention_weights, im2col_step):
         """GPU version of multi-scale deformable attention.
@@ -47,7 +48,7 @@ class MultiScaleDeformableAttnFunction_fp16(Function):
 
     @staticmethod
     @once_differentiable
-    @custom_bwd
+    @custom_bwd(device_type='cuda')
     def backward(ctx, grad_output):
         """GPU version of backward function.
 
@@ -84,7 +85,7 @@ class MultiScaleDeformableAttnFunction_fp16(Function):
 class MultiScaleDeformableAttnFunction_fp32(Function):
 
     @staticmethod
-    @custom_fwd(cast_inputs=torch.float32)
+    @custom_fwd(cast_inputs=torch.float32, device_type='cuda')
     def forward(ctx, value, value_spatial_shapes, value_level_start_index,
                 sampling_locations, attention_weights, im2col_step):
         """GPU version of multi-scale deformable attention.
@@ -123,7 +124,7 @@ class MultiScaleDeformableAttnFunction_fp32(Function):
 
     @staticmethod
     @once_differentiable
-    @custom_bwd
+    @custom_bwd(device_type='cuda')
     def backward(ctx, grad_output):
         """GPU version of backward function.
 

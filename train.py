@@ -18,12 +18,12 @@ from mmcv.runner import get_dist_info, init_dist
 from os import path as osp
 
 from mmdet import __version__ as mmdet_version
-from mmdet3d import __version__ as mmdet3d_version
+from custom_mmdet3d.version import __version__ as mmdet3d_version
 #from mmdet3d.apis import train_model
 
-from mmdet3d.datasets import build_dataset
-from mmdet3d.models import build_model
-from mmdet3d.utils import collect_env, get_root_logger
+from custom_mmdet3d.datasets import build_dataset
+from custom_mmdet3d.models import build_model
+from custom_mmdet3d.utils import collect_env, get_root_logger
 from mmdet.apis import set_random_seed
 from mmseg import __version__ as mmseg_version
 
@@ -34,7 +34,7 @@ cv2.setNumThreads(1)
 
 import sys
 sys.path.append('')
-
+warnings.filterwarnings("ignore", category=DeprecationWarning, module="ignite.handlers.checkpoint")
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Train a detector')
@@ -85,7 +85,7 @@ def parse_args():
         choices=['none', 'pytorch', 'slurm', 'mpi'],
         default='none',
         help='job launcher')
-    parser.add_argument('--local_rank', type=int, default=0)
+    parser.add_argument('--local-rank', type=int, default=0)
     parser.add_argument(
         '--autoscale-lr',
         action='store_true',
@@ -224,6 +224,7 @@ def main():
         train_cfg=cfg.get('train_cfg'),
         test_cfg=cfg.get('test_cfg'))
     model.init_weights()
+    
 
     logger.info(f'Model:\n{model}')
     datasets = [build_dataset(cfg.data.train)]

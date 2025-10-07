@@ -11,7 +11,7 @@ from mmdet.models.dense_heads import DETRHead
 from mmcv.runner import force_fp32, auto_fp16
 from mmcv.utils import TORCH_VERSION, digit_version
 from mmdet.core import build_assigner, build_sampler
-from mmdet3d.core.bbox.coders import build_bbox_coder
+# from mmdet3d.core.bbox.coders import build_bbox_coder
 from mmdet.models.utils.transformer import inverse_sigmoid
 from mmdet.core.bbox.transforms import bbox_xyxy_to_cxcywh
 from mmcv.cnn import Linear, bias_init_with_prob, xavier_init
@@ -198,13 +198,13 @@ class VADHead(DETRHead):
             self.map_code_weights = [1.0, 1.0, 1.0,
                                  1.0, 1.0, 1.0, 1.0, 1.0, 0.2, 0.2]
 
-        self.bbox_coder = build_bbox_coder(bbox_coder)
-        self.pc_range = self.bbox_coder.pc_range
+        # self.bbox_coder = build_bbox_coder(bbox_coder)
+        # self.pc_range = self.bbox_coder.pc_range
         self.real_w = self.pc_range[3] - self.pc_range[0]
         self.real_h = self.pc_range[4] - self.pc_range[1]
         self.num_cls_fcs = num_cls_fcs - 1
 
-        self.map_bbox_coder = build_bbox_coder(map_bbox_coder)
+        # self.map_bbox_coder = build_bbox_coder(map_bbox_coder)
         self.map_query_embed_type = map_query_embed_type
         self.map_transform_method = map_transform_method
         self.map_gt_shift_pts_pattern = map_gt_shift_pts_pattern

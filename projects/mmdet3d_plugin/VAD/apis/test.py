@@ -64,6 +64,21 @@ def custom_multi_gpu_test(model, data_loader, tmpdir=None, gpu_collect=False):
     have_mask = False
     for i, data in enumerate(data_loader):
         with torch.no_grad():
+            #-----------------------------------------这段用于可视化部分帧----------------------------------------------------------
+            # need_token_idx_list = [749, 3033, 3034, 3284, 3285, 3308, 
+            #                       3310, 3311, 3313, 3314, 3315, 3316, 
+            #                       3417, 3418, 3419, 3486, 3487, 3488, 
+            #                       5278, 5405, 5406, 5460, 5461, 5462, 
+            #                       5463, 5475, 5476, 5477, 5478, 5479, 
+            #                       5480, 5481, 5482]
+            # need_token_idx_list = [273]
+            # if i not in need_token_idx_list:
+            #     if rank == 0:
+            
+            #         for _ in range(1 * world_size):
+            #             prog_bar.update()
+            #     continue
+            #-----------------------------------------这段用于可视化部分帧----------------------------------------------------------
             result = model(return_loss=False, rescale=True, **data)
             # encode mask results
             if isinstance(result, dict):

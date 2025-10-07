@@ -1,13 +1,13 @@
 # Overview
-This is the upgrade version of LAW (Enhancing End-to-End Autonomous Driving with Latent World Model). We removed the view selection component and revised several modules to achieve a more universal framework.
+This is the first version of World4Drive (End-to-End Autonomous Driving via Intention-aware Physical Latent World Model).
 
 
 # Step-by-step installation instructions
 
 **a. Create a conda virtual environment and activate it.**
 ```shell
-conda create -n law python=3.8 -y
-conda activate law
+conda create -n w4d python=3.8 -y
+conda activate w4d
 ```
 
 **b. Install PyTorch and torchvision following the [official instructions](https://pytorch.org/).**
@@ -40,7 +40,7 @@ pip install timm
 
 **f. Install mmdet3d.**
 ```shell
-conda activate law
+conda activate w4d
 git clone https://github.com/open-mmlab/mmdetection3d.git
 cd /path/to/mmdetection3d
 git checkout -f v0.17.1
@@ -61,7 +61,7 @@ For details, please refer to docs/prepare_dataset.md
 
 # Training
 ```shell
-  ./tools/nusc_my_train.sh law/default 8
+  ./tools/nusc_my_train.sh w4d/default 8
 ```
 
 # Testing

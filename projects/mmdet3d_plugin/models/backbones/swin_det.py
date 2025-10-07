@@ -16,7 +16,7 @@ import torch.utils.checkpoint as checkpoint
 
 from mmseg.ops import resize
 from mmdet.utils import get_root_logger
-from mmdet3d.models.builder import BACKBONES
+from custom_mmdet3d.models.builder import BACKBONES
 from mmcv.cnn.bricks.registry import ATTENTION
 from torch.nn.modules.utils import _pair as to_2tuple
 from collections import OrderedDict
@@ -676,7 +676,7 @@ class SwinBlockSequence(BaseModule):
             return x, hw_shape, x, hw_shape
 
 
-@BACKBONES.register_module()
+@BACKBONES.register_module(force=True)
 class SwinTransformer(BaseModule):
     """ Swin Transformer
     A PyTorch implement of : `Swin Transformer:

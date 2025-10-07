@@ -5,7 +5,7 @@
 # ---------------------------------------------
 
 import torch
-from torch.cuda.amp import custom_bwd, custom_fwd
+from torch.amp import custom_bwd, custom_fwd
 from torch.autograd.function import Function, once_differentiable
 from mmcv.utils import ext_loader
 ext_module = ext_loader.load_ext(
@@ -53,7 +53,7 @@ class MultiScaleDeformableAttnFunction_fp16(Function):
 
     @staticmethod
     @once_differentiable
-    @custom_bwd
+    @custom_bwd(device_type='cuda')
     def backward(ctx, grad_output):
         """GPU version of backward function.
 
@@ -129,7 +129,7 @@ class MultiScaleDeformableAttnFunction_fp32(Function):
 
     @staticmethod
     @once_differentiable
-    @custom_bwd
+    @custom_bwd(device_type='cuda')
     def backward(ctx, grad_output):
         """GPU version of backward function.
 

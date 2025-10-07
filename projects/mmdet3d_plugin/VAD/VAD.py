@@ -3,10 +3,10 @@ import copy
 
 import torch
 from mmdet.models import DETECTORS
-from mmdet3d.core import bbox3d2result
+from custom_mmdet3d.core import bbox3d2result
 from mmcv.runner import force_fp32, auto_fp16
 from scipy.optimize import linear_sum_assignment
-from mmdet3d.models.detectors.mvx_two_stage import MVXTwoStageDetector
+from custom_mmdet3d.models.detectors.mvx_two_stage import MVXTwoStageDetector
 
 from projects.mmdet3d_plugin.models.utils.grid_mask import GridMask
 from projects.mmdet3d_plugin.VAD.planner.metric_stp3 import PlanningMetric
@@ -207,7 +207,9 @@ class VAD(MVXTwoStageDetector):
                       ego_fut_masks=None,
                       ego_fut_cmd=None,
                       ego_lcf_feat=None,
-                      gt_attr_labels=None
+                      gt_attr_labels=None,
+                      mask=None,
+                      depth=None,
                       ):
         """Forward training function.
         Args:
@@ -248,7 +250,7 @@ class VAD(MVXTwoStageDetector):
                                             gt_bboxes_ignore, map_gt_bboxes_ignore, prev_bev,
                                             ego_his_trajs=ego_his_trajs, ego_fut_trajs=ego_fut_trajs,
                                             ego_fut_masks=ego_fut_masks, ego_fut_cmd=ego_fut_cmd,
-                                            ego_lcf_feat=ego_lcf_feat, gt_attr_labels=gt_attr_labels)
+                                            ego_lcf_feat=ego_lcf_feat, gt_attr_labels=gt_attr_labels, mask=mask, depth=depth)
 
         losses.update(losses_pts)
         return losses

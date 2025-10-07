@@ -10,4 +10,4 @@ from .models.backbones.vovnet import VoVNet
 from .models.utils import *
 from .models.opt.adamw import AdamW2
 from .VAD import *
-from .LAW import *
+from .W4D import *

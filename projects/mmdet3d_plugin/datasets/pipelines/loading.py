@@ -9,7 +9,7 @@ from nuscenes.map_expansion.map_api import locations as LOCATIONS
 from PIL import Image
 
 
-from mmdet3d.core.points import BasePoints, get_points_type
+from custom_mmdet3d.core.points import BasePoints, get_points_type
 from mmdet.datasets.builder import PIPELINES
 from mmdet.datasets.pipelines import LoadAnnotations
 

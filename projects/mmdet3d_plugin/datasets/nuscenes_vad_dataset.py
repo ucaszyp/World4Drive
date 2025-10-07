@@ -6,7 +6,7 @@ from typing import Dict, List
 
 import numpy as np
 from mmdet.datasets import DATASETS
-from mmdet3d.datasets import NuScenesDataset
+from custom_mmdet3d.datasets import NuScenesDataset
 import pyquaternion
 import mmcv
 from os import path as osp
@@ -16,11 +16,9 @@ import numpy as np
 from nuscenes.eval.common.utils import quaternion_yaw, Quaternion
 from .vad_custom_nuscenes_eval import NuScenesEval_custom
 from nuscenes.eval.common.utils import center_distance
-from projects.mmdet3d_plugin.models.utils.visual import save_tensor
 from mmcv.parallel import DataContainer as DC
 import random
-from mmdet3d.core import LiDARInstance3DBoxes
-from nuscenes.utils.data_classes import Box as NuScenesBox
+from custom_mmdet3d.core import LiDARInstance3DBoxes
 from projects.mmdet3d_plugin.core.bbox.structures.nuscenes_box import CustomNuscenesBox
 from shapely import affinity, ops
 from shapely.geometry import LineString, box, MultiPolygon, MultiLineString
@@ -933,7 +931,7 @@ class v1CustomDetectionConfig:
         self.max_boxes_per_sample = max_boxes_per_sample
         self.mean_ap_weight = mean_ap_weight
 
-        self.class_names = self.class_range_y.keys()
+        self.class_names = list(self.class_range_y.keys())
 
     def __eq__(self, other):
         eq = True
@@ -1334,6 +1332,7 @@ class VADCustomNuScenesDataset(NuScenesDataset):
         """
         convert sample queue into one single sample.
         """
+        depths_list = []
         imgs_list = []
         sem_imgs_list = []
         metas_map = {}
@@ -1342,6 +1341,9 @@ class VADCustomNuScenesDataset(NuScenesDataset):
         for i, each in enumerate(queue):
             single_img = each['img'][0].data if isinstance(each['img'], list) else each['img'].data
             imgs_list.append(single_img)
+            if 'depth' in each.keys():
+                single_depth = each['depth']
+                depths_list += single_depth.copy()
             if 'semantic_img' in each.keys():
                 single_sem_img = each['semantic_img'][0].data if isinstance(each['semantic_img'], list) else each['semantic_img'].data
                 sem_imgs_list.append(single_sem_img)
@@ -1379,6 +1381,7 @@ class VADCustomNuScenesDataset(NuScenesDataset):
                                 cpu_only=False, stack=True)
                                 
         queue[-1]['img_metas'] = DC(metas_map, cpu_only=True)
+        queue[-1]['depth'] = depths_list
         queue = queue[-1]
 
         return queue
@@ -1575,6 +1578,41 @@ class VADCustomNuScenesDataset(NuScenesDataset):
         """
         # print('load idx', idx)
         if self.test_mode:
+            #------------------------------------------------以下代码用于可视化部分场景的注意力权重-------------------------------------------
+            # need_token_list = ["62eaf35b2e0b447887cd34098f4013b3","64aaf542297f46b6ba74022b00d92a08","512673efdbec4c8e9031749bbf49d66b",
+            #                    "f540699e07cf47d8bddeb1f0227a7417","4eb8a27a2b2f4ed4b5b6a6cc2f8801eb","bc33d196405a4afaa430a93b7a4d3ca7",
+            #                    "c6c6bd12ff2c444aa8d5d41903ef1b6a","0c3d17d2bed9470397407b4684cd4d75","5b3ffd92b67b4a48b283d63736298bae",
+            #                    "590ad386f23448a4bf080d90df09ed84","976b81713430463b9ffeb99f8d3ed874","d2ca32b5836244afb90a9e2ab9e1b7f1",
+            #                    "35ef5018c85e4ccda8f36fb05a1d22f9","c9d8db6e1a214fa3a320c10fbca115e2","d5a661d8c39e4d87bc3d367063a8c82a",
+            #                    "3f5fd35ad36646f8b718ec1416c70f7f","170c222d8a514f258839c489fb48ff0f","ca2015ea2f06453c8d34fb1894ffde7d",
+            #                    "f9788629ad6e4b508c8658b69b4fa1ed","ffced1bcacb046af9928fe92d99fdb23","ce3718b3d5a4404c80b724e1b15cf7bf",
+            #                    "e0e5ebc17c73465181cab1383606e5f5","f868336acfca41f6b3b7a3d1b6518691","8df260afcbab491f8d9700612a30bc74",
+            #                    "84eb0d4946ea4990b8e9b9997e2173f2","590dfd438d7349b5923a49b9d71a952a","8918ed33ecf84cafa54eb42ff7845e1e",
+            #                    "15f61a56df7a4ecab63dda6cff25e7a0","263f230e546b4d9ea35dc69ab9efc0a0","0660df67866547b09bf286b9fe0b05f2",
+            #                    "ac54c36b81eb498a810587527ff58ac8","e49931f3efaf4066b5398d2bebf8081b","f3b10b3ae50a4ada8ad177f61b3138f5"]
+            # need_token_idx_list = [749, 3033, 3034, 3284, 3285, 3308, 
+            #                       3310, 3311, 3313, 3314, 3315, 3316, 
+            #                       3417, 3418, 3419, 3486, 3487, 3488, 
+            #                       5278, 5405, 5406, 5460, 5461, 5462, 
+            #                       5463, 5475, 5476, 5477, 5478, 5479, 
+            #                       5480, 5481, 5482]
+            # while True:
+            #     data = self.prepare_test_data_video(idx)
+            #     if data['img_metas'].data[0]['sample_idx'] not in need_token_list \
+            #         or data['img_metas'].data[1]['sample_idx'] not in need_token_list:
+            #         idx = idx + 1
+            #         # data_length = len(self.data_infos)
+            #         # idx = np.random.randint(0, data_length)
+            #         # idx = self._rand_another(idx)
+            #         continue
+            #     # #--------------------用于获取idx------------------------------
+            #    # need_token_idx_list = []
+            #    # for idx, info in enumerate(self.data_infos):
+            #    #      if info['token'] in need_token_list:
+            #    #          need_token_idx_list.append(idx)
+            #     # #--------------------用于获取idx------------------------------
+            #     return data
+            #------------------------------------------------以上代码用于可视化部分场景的注意力权重-------------------------------------------
             return self.prepare_test_data_video(idx)
         
         while True:
@@ -1941,22 +1979,134 @@ class VADCustomNuScenesDataset(NuScenesDataset):
         # NOTE: print planning metric
         print('\n')
         print('-------------- Planning --------------')
+
+        # 这里分开分成左右转和直行，分别计算指标
+        # if not isinstance(results, list):
+        #     results = results['bbox_results']
+        # planning_metric_dict = {}
+        # plan_cmd_list = ['turn right', 'turn left', 'go straight'] #[1,0,0] [0,1,0] [0,0,1]
+        # num_valid_dict = {cmd: 0 for cmd in plan_cmd_list}
+        # grouped_results = {cmd: [] for cmd in plan_cmd_list}
+        # for res in results:
+        #     for key, value in res.items():
+        #         plan_cmd = value['plan_results']['ego_fut_cmd'].argmax()
+        #         if plan_cmd == 0:
+        #             grouped_results['turn right'].append(res)
+        #         elif plan_cmd == 1:
+        #             grouped_results['turn left'].append(res)
+        #         elif plan_cmd == 2:
+        #             grouped_results['go straight'].append(res)
+        # metric_dict = None
+        # num_valid = 0
+
+        # # print(results)
+        # for cmd in plan_cmd_list:
+        #     planning_metric_dict[cmd] = None
+        #     for res in grouped_results[cmd]:
+        #         for key, value in res.items():
+        #             if value['metric_results']['fut_valid_flag']:
+        #                 num_valid_dict[cmd] += 1
+        #             else:
+        #                 continue
+
+        #             if planning_metric_dict[cmd] is None:
+        #                 planning_metric_dict[cmd] = copy.deepcopy(value['metric_results'])
+        #             else:
+        #                 for k in value['metric_results'].keys():
+        #                     planning_metric_dict[cmd][k] += value['metric_results'][k]
+        # for cmd in plan_cmd_list:
+        #     if num_valid_dict[cmd] > 0:
+        #         print(f'\n-------------- Planning Results for {cmd} --------------')
+        #         for k in planning_metric_dict[cmd]:
+        #             planning_metric_dict[cmd][k] = planning_metric_dict[cmd][k] / num_valid_dict[cmd]
+        #             print("{}:{}".format(k, planning_metric_dict[cmd][k]))
+        #         planning_metric_dict[cmd]['plan_L2_avg'] = (planning_metric_dict[cmd]['plan_L2_1s'] + planning_metric_dict[cmd]['plan_L2_2s'] + planning_metric_dict[cmd]['plan_L2_3s']) / 3
+        #         planning_metric_dict[cmd]['plan_obj_box_col_avg'] = (planning_metric_dict[cmd]['plan_obj_box_col_1s'] + planning_metric_dict[cmd]['plan_obj_box_col_2s'] + planning_metric_dict[cmd]['plan_obj_box_col_3s']) / 3
+        # #eval planning only
+        # return planning_metric_dict
+
+        # 下面计算四种场景的指标
+        # from nuscenes import NuScenes
+        # self.nusc = NuScenes(version=self.version, dataroot=self.data_root, verbose=False)
+        # scene_categories = {
+        #     'rainy': [],      # 雨天场景
+        #     'night': [],      # 黑夜场景
+        #     'day': [],        # 白天场景
+        #     'sunny': []       # 晴天场景
+        # }
+        # # 每种类别的有效样本计数
+        # category_valid_count = {cat: 0 for cat in scene_categories}
+        # # 每种类别的指标总和
+        # category_metrics = {cat: None for cat in scene_categories}
+        # for res in results:
+        #     for key, value in res.items():
+        #         sample_token = key
+        #         # 获取sample和scene
+        #         sample = self.nusc.get('sample', sample_token)
+        #         scene = self.nusc.get('scene', sample['scene_token'])
+        #         # 从scene的描述中获取场景类型
+        #         description = scene.get('description', '').lower()
+        #         # 分类场景
+        #         if 'rain' in description or 'rainy' in description:
+        #             scene_categories['rainy'].append(res)
+        #         else:
+        #             scene_categories['sunny'].append(res)
+
+        #         if 'night' in description:
+        #             scene_categories['night'].append(res)
+        #         else:
+        #             scene_categories['day'].append(res)
+                
+        # # 为每个场景类别计算指标
+        # print('\n-------------- Results by Scene Category --------------')
+        # for category, category_results in scene_categories.items():
+        #     category_metrics[category] = None
+            
+        #     for res in category_results:
+        #         for key, value in res.items():
+        #             if 'metric_results' not in value:
+        #                 continue
+                        
+        #             if value['metric_results']['fut_valid_flag']:
+        #                 category_valid_count[category] += 1
+        #             else:
+        #                 continue
+
+        #             if category_metrics[category] is None:
+        #                 category_metrics[category] = copy.deepcopy(value['metric_results'])
+        #             else:
+        #                 for k in value['metric_results'].keys():
+        #                     category_metrics[category][k] += value['metric_results'][k]
+        
+        # for category in scene_categories:
+        #     if category_valid_count[category] > 0:
+        #         print(f'\n-------------- Planning Results for {category} --------------')
+        #         for k in category_metrics[category]:
+        #             category_metrics[category][k] = category_metrics[category][k] / category_valid_count[category]
+        #             print("{}:{}".format(k, category_metrics[category][k]))
+        #         category_metrics[category]['plan_L2_avg'] = (category_metrics[category]['plan_L2_1s'] + category_metrics[category]['plan_L2_2s'] + category_metrics[category]['plan_L2_3s']) / 3
+        #         category_metrics[category]['plan_obj_box_col_avg'] = (category_metrics[category]['plan_obj_box_col_1s'] + category_metrics[category]['plan_obj_box_col_2s'] + category_metrics[category]['plan_obj_box_col_3s']) / 3
+        # #eval planning only
+        # return category_metrics    
+
+
         metric_dict = None
         num_valid = 0
         if not isinstance(results, list):
             results = results['bbox_results']
         # print(results)
         for res in results:
-            if res['metric_results']['fut_valid_flag']:
-                num_valid += 1
-            else:
-                continue
+            for key, value in res.items():
+                if value['metric_results']['fut_valid_flag']:
+                    num_valid += 1
+                else:
+                    continue
 
-            if metric_dict is None:
-                metric_dict = copy.deepcopy(res['metric_results'])
-            else:
-                for k in res['metric_results'].keys():
-                    metric_dict[k] += res['metric_results'][k]
+                if metric_dict is None:
+                    metric_dict = copy.deepcopy(value['metric_results'])
+                else:
+                    for k in value['metric_results'].keys():
+                        metric_dict[k] += value['metric_results'][k]
         
         for k in metric_dict:
             metric_dict[k] = metric_dict[k] / num_valid

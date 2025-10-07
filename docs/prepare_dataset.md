@@ -24,7 +24,7 @@ Using the above code will generate `vad_nuscenes_infos_temporal_{train,val}.pkl`
 
 **Folder structure**
 ```
-LAW
+World4Drive/
 ├── projects/
 ├── tools/
 ├── configs/

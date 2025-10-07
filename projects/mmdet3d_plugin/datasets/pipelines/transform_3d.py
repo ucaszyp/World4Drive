@@ -1,11 +1,120 @@
+import os
 import numpy as np
 from numpy import random
 import mmcv
 from mmdet.datasets.builder import PIPELINES
 from mmcv.parallel import DataContainer as DC
-from mmdet3d.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
+from custom_mmdet3d.core.bbox import (CameraInstance3DBoxes, DepthInstance3DBoxes,
                                LiDARInstance3DBoxes, box_np_ops)
+MASK_ROOT='/path/to/data/nuscenes_semantic/samples'
+SEMANTIC_MAP = np.array([
+    0,   # ignore
+    4,   # sedan      -> car
+    11,  # highway    -> driveable_surface
+    3,   # bus        -> bus
+    10,  # truck      -> truck
+    13,  # terrain    -> terrain
+    15,  # tree       -> vegetation
+    12,  # sidewalk   -> sidewalk
+    2,   # bicycle    -> bycycle
+    1,   # barrier    -> barrier
+    7,   # person     -> pedestrian
+    14,  # building   -> manmade
+    6,   # motorcycle -> motorcycle
+    5,   # crane      -> construction_vehicle
+    9,   # trailer    -> trailer
+    8,   # cone       -> traffic_cone
+    16   # sky        -> ignore
+], dtype=np.int8)
 
+STATIC_MAP=np.array([
+    1,   # ignore
+    0,   # sedan      -> car
+    1,  # highway    -> driveable_surface
+    0,   # bus        -> bus
+    0,  # truck      -> truck
+    1,  # terrain    -> terrain
+    1,  # tree       -> vegetation
+    1,  # sidewalk   -> sidewalk
+    0,   # bicycle    -> bycycle
+    1,   # barrier    -> barrier
+    0,   # person     -> pedestrian
+    1,  # building   -> manmade
+    0,   # motorcycle -> motorcycle
+    0,   # crane      -> construction_vehicle
+    0,   # trailer    -> trailer
+    1,   # cone       -> traffic_cone
+    1   # sky        -> ignore
+], dtype=np.int8)
+
+import os
+DEPTH_ROOT="/path/to/data/depth/"  
+
+@PIPELINES.register_module()
+class LoadMultiDepthFromFiles(object):
+    """Load multiple masks from files.
+    Args:
+        keys (list[str]): The keys of masks.
+    """
+
+    def __init__(self, to_float32):
+        self.to_float32 = to_float32
+
+    def __call__(self, results):
+        """Call function to load masks from files.
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Results after loading masks.
+        """
+        depth = []
+        for file in results['filename']:
+            basename = os.path.basename(file)
+            name_without_ext=os.path.splitext(basename)[0]
+            # cam_name = file.split("/")[-2]
+            
+            d = np.load((f'{DEPTH_ROOT}/{name_without_ext}.npy'))
+            depth.append(d)
+        results['depth'] = depth
+        return results
+
+    def __repr__(self):
+        """str: Return a string that describes the module."""
+        return self.__class__.__name__ + f'(keys={self.to_float32})'
+    
+@PIPELINES.register_module()
+class LoadMultiMaskFromFiles(object):
+    """Load multiple masks from files.
+    Args:
+        keys (list[str]): The keys of masks.
+    """
+
+    def __init__(self, to_float32):
+        self.to_float32 = to_float32
+
+    def __call__(self, results):
+        """Call function to load masks from files.
+        Args:
+            results (dict): Result dict from loading pipeline.
+        Returns:
+            dict: Results after loading masks.
+        """
+        mask = []
+        for file in results['filename']:
+            basename=os.path.basename(file)
+            name_without_ext=os.path.splitext(basename)[0]
+            cam_name = file.split("/")[-2]
+            # m=STATIC_MAP[np.transpose(np.fromfile((f'{MASK_ROOT}/{cam_name}/{name_without_ext}_mask.bin'), dtype=np.int8).reshape(900, 1600))]
+            m=SEMANTIC_MAP[np.transpose(np.fromfile((f'{MASK_ROOT}/{cam_name}/{name_without_ext}_mask.bin'), dtype=np.int8).reshape(900, 1600))]
+            if self.to_float32:
+                m = m.astype(np.float32)
+            mask.append(m)
+        results['mask']=mask
+        return results
+
+    def __repr__(self):
+        """str: Return a string that describes the module."""
+        return self.__class__.__name__ + f'(keys={self.to_float32})'
 
 @PIPELINES.register_module()
 class CustomObjectRangeFilter(object):
@@ -140,6 +249,10 @@ class PadMultiViewImage(object):
         
         results['ori_shape'] = [img.shape for img in results['img']]
         results['img'] = padded_img
+        if 'mask' in results.keys():
+            results['mask']=[mmcv.impad_to_multiple(mask, self.size_divisor, pad_val=self.pad_val) for mask in results['mask']]
+        if 'depth' in results.keys():
+            results['depth']=[mmcv.impad_to_multiple(depth, self.size_divisor, pad_val=self.pad_val) for depth in results['depth']]
         results['img_shape'] = [img.shape for img in padded_img]
         results['pad_shape'] = [img.shape for img in padded_img]
         results['pad_fixed_size'] = self.size
@@ -468,6 +581,21 @@ class RandomScaleImageMultiViewImage(object):
         scale_factor[1, 1] *= rand_scale
         results['img'] = [mmcv.imresize(img, (x_size[idx], y_size[idx]), return_scale=False) for idx, img in
                           enumerate(results['img'])]
+        # mask=[]
+        # for file in results['filename']:
+        #     basename=os.path.basename(file)
+        #     name_without_ext=os.path.splitext(basename)[0]
+        #     cam_name = file.split("/")[-2]
+        #     mask.append(STATIC_MAP[np.transpose(np.fromfile((f'{MASK_ROOT}/{cam_name}/{name_without_ext}_mask.bin'), dtype=np.int8).reshape(900, 1600))].astype(np.float32))
+        if 'mask' in results.keys():
+            x_size_m=[int(m.shape[0] * rand_scale) for m in results['mask']]
+            y_size_m=[int(m.shape[1] * rand_scale) for m in results['mask']]
+            results['mask']=[mmcv.imresize(m[:,:,None], (x_size_m[idx], y_size_m[idx]), return_scale=False, interpolation='nearest') for idx, m in enumerate(results['mask'])]
+            # results['mask']=[mmcv.imresize(m[:,:,None], (x_size_m[idx], y_size_m[idx]), return_scale=False) for idx, m in enumerate(results['mask'])]
+        if 'depth' in results.keys():
+            x_size_d=[int(m.shape[1] * rand_scale * 2) for m in results['depth']]
+            y_size_d=[int(m.shape[0] * rand_scale * 2) for m in results['depth']]
+            results['depth']=[mmcv.imresize(m[:,:,None], (x_size_d[idx], y_size_d[idx]), return_scale=False, interpolation='nearest') for idx, m in enumerate(results['depth'])]
         if 'semantic_img' in results.keys():
             results['semantic_img'] = [mmcv.imresize(img, (x_size[idx], y_size[idx]), return_scale=False) for idx, img in
                                        enumerate(results['semantic_img'])]
