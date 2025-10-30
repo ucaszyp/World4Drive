@@ -2,7 +2,7 @@
 This is the first version of World4Drive (End-to-End Autonomous Driving via Intention-aware Physical Latent World Model).
 
 
-# Step-by-step installation instructions
+# Step-by-step conda environment installation instructions
 
 **a. Create a conda virtual environment and activate it.**
 ```shell
@@ -18,7 +18,7 @@ pip install torch==1.9.1+cu111 torchvision==0.10.1+cu111 torchaudio==0.9.1 -f ht
 
 **c. Install gcc>=5 in conda env (optional).**
 ```shell
-conda install -c omgarcia gcc-5 # gcc-6.2
+conda install -c omgarcia gcc-6 # gcc-6.2
 ```
 
 **c. Install mmcv-full.**
@@ -53,11 +53,20 @@ pip install nuscenes-devkit==1.1.9
 pip install yapf==0.40.1
 ```
 
-**h. Follow VAD to organize nuscenes and download the pickle**
+**h. Install other dependencies.**
+```bash
+pip install -r requirements.txt
+```
+
+# Data preparation instructions
+
+**Follow VAD to organize nuscenes and download the pickle**
 ```shell
 $WORK_DIR/data/nuscenes/
 ```
 For details, please refer to docs/prepare_dataset.md
+
+# Train & Test
 
 # Training
 ```shell
